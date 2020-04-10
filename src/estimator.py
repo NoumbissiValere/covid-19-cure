@@ -8,26 +8,50 @@ def estimator(data):
     severeInfectionsByRequestedTime = getInfectionsByRequestedTime(severeCurrentlyInfected,
                                                                    data['periodType'],
                                                                    data['timeToElapse'])
-    impactSevereCasesByRequestedTime = get15Percent(infectionsByRequestedTime)
-    severeImpactSevereCasesByRequestedTime = get15Percent(severeInfectionsByRequestedTime
-                                                          )
+    impactSevereCasesByRequestedTime = getPercent(infectionsByRequestedTime,
+                                                  percent=15)
+    severeImpactSevereCasesByRequestedTime = getPercent(severeInfectionsByRequestedTime,
+                                                        percent=15)
     hospitalBedsByRequestedTime = getHospitalBedsByRequestedTime(impactSevereCasesByRequestedTime,
                                                                  data['totalHospitalBeds'])
     severeHospitalBedsByRequestedTime = getHospitalBedsByRequestedTime(severeImpactSevereCasesByRequestedTime,
                                                                        data['totalHospitalBeds'])
+    casesForICUByRequestedTime = getPercent(infectionsByRequestedTime,
+                                            percent=5)
+    severeCasesForICUByRequestedTime = getPercent(severeInfectionsByRequestedTime,
+                                                  percent=5)
+    casesForVentilatorsByRequestedTime = getPercent(infectionsByRequestedTime,
+                                                    percent=2)
+    severeCasesForVentilatorsByRequestedTime = getPercent(severeInfectionsByRequestedTime,
+                                                          percent=2)
+    numDays = getDays(data['periodType'], data['timeToElapse'])
+    dollarsInFlight = getDollars(infectionsByRequestedTime,
+                                 data['region']['avgDailyIncomeInUSD'],
+                                 data['region']['avgDailyIncomePopulation'],
+                                 numDays)
+    severeDollarsFlight = getDollars(severeInfectionsByRequestedTime,
+                                     data['region']['avgDailyIncomeInUSD'],
+                                     data['region']['avgDailyIncomePopulation'],
+                                     numDays)
     output = {
         'data': data,
         'impact': {
             'currentlyInfected': currentlyInfected,
             'infectionsByRequestedTime': infectionsByRequestedTime,
             'severeCasesByRequestedTime': int(impactSevereCasesByRequestedTime),
-            'hospitalBedsByRequestedTime': int(hospitalBedsByRequestedTime)
+            'hospitalBedsByRequestedTime': int(hospitalBedsByRequestedTime),
+            'casesForICUByRequestedTime': int(casesForICUByRequestedTime),
+            'casesForVentilatorsByRequestedTime': int(casesForVentilatorsByRequestedTime),
+            'dollarsInFlight': int(dollarsInFlight)
         },
         'severeImpact': {
             'currentlyInfected': severeCurrentlyInfected,
             'infectionsByRequestedTime': severeInfectionsByRequestedTime,
             'severeCasesByRequestedTime': int(severeImpactSevereCasesByRequestedTime),
-            'hospitalBedsByRequestedTime': int(severeHospitalBedsByRequestedTime)
+            'hospitalBedsByRequestedTime': int(severeHospitalBedsByRequestedTime),
+            'casesForICUByRequestedTime': int(severeCasesForICUByRequestedTime),
+            'casesForVentilatorsByRequestedTime': int(severeCasesForVentilatorsByRequestedTime),
+            'dollarsInFlight': int(severeDollarsFlight)
         }
     }
     return output
@@ -54,10 +78,14 @@ def getInfectionsByRequestedTime(currentlyInfected, periodType, timeToElapse):
     return currentlyInfected * pow(2, factor)
 
 
-def get15Percent(infectionsByRequestedTime):
-    return float((15 / 100) * float(infectionsByRequestedTime))
+def getPercent(infectionsByRequestedTime, percent):
+    return float((percent / 100) * float(infectionsByRequestedTime))
 
 
 def getHospitalBedsByRequestedTime(value, totalHospitalBeds):
     availableBeds = float((35 / 100) * float(totalHospitalBeds))
     return float(availableBeds - float(value))
+
+
+def getDollars(infections, avgUSD, avgPop, numDays):
+    return float((float(infections) * avgPop * avgUSD) / numDays)
