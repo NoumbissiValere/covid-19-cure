@@ -11,6 +11,7 @@ node_modules/
 
 # tests
 audits/
+tests/
 
 # venv
 .venv/
